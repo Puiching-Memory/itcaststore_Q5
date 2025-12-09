@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库服务
+  mysql:
+    image: mysql:5.7
+    container_name: itcaststore_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: itcast
+      MYSQL_DATABASE: itcaststore
+      MYSQL_USER: itcaststore
+      MYSQL_PASSWORD: itcaststore
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      # 数据库初始化脚本
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      # 数据持久化
+      - mysql_data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    networks:
+      - itcaststore_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pitcast"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 后端应用服务（Tomcat）
+  backend:
+    build:
+      context: ..
+      dockerfile: itcaststore/Dockerfile
+    container_name: itcaststore_backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - TZ=Asia/Shanghai
+    ports:
+      - "8080:8080"
+    volumes:
+      # 上传的文件持久化
+      - product_img_data:/usr/local/tomcat/webapps/ROOT/productImg
+      # Docker 配置文件（数据库连接配置）
+      - ./c3p0-config.xml:/docker/c3p0-config.xml:ro
+      # 启动脚本
+      - ./entrypoint.sh:/usr/local/bin/entrypoint.sh:ro
+    entrypoint: ["/bin/bash", "/usr/local/bin/entrypoint.sh"]
+    networks:
+      - itcaststore_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+  # Nginx 反向代理服务
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: itcaststore_nginx
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - itcaststore_network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  itcaststore_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  product_img_data:
+    driver: local
