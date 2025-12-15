@@ -1,73 +1,61 @@
-version: '3.8'
-
 services:
-  # MySQL 数据库服务
-  mysql:
-    image: mysql:5.7
-    container_name: itcaststore_mysql
+  # PostgreSQL 数据库服务
+  postgres:
+    image: postgres:16-alpine
+    container_name: itcaststore_postgres
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: itcast
-      MYSQL_DATABASE: itcaststore
-      MYSQL_USER: itcaststore
-      MYSQL_PASSWORD: itcaststore
+      POSTGRES_DB: itcaststore
+      POSTGRES_USER: itcaststore
+      POSTGRES_PASSWORD: itcaststore
       TZ: Asia/Shanghai
     ports:
-      - "3306:3306"
+      - "5433:5432"
     volumes:
-      # 数据库初始化脚本
-      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-      # 数据持久化
-      - mysql_data:/var/lib/mysql
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --default-authentication-plugin=mysql_native_password
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - itcaststore_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pitcast"]
+      test: ["CMD-SHELL", "pg_isready -U itcaststore"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # 后端应用服务（Tomcat）
+  # 后端应用服务（Spring Boot）
   backend:
     build:
-      context: ..
-      dockerfile: itcaststore/Dockerfile
+      context: ../backend
+      dockerfile: Dockerfile
     container_name: itcaststore_backend
     restart: unless-stopped
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
     environment:
       - TZ=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/itcaststore
+      - SPRING_DATASOURCE_USERNAME=itcaststore
+      - SPRING_DATASOURCE_PASSWORD=itcaststore
     ports:
       - "8080:8080"
     volumes:
-      # 上传的文件持久化
-      - product_img_data:/usr/local/tomcat/webapps/ROOT/productImg
-      # Docker 配置文件（数据库连接配置）
-      - ./c3p0-config.xml:/docker/c3p0-config.xml:ro
-      # 启动脚本
-      - ./entrypoint.sh:/usr/local/bin/entrypoint.sh:ro
-    entrypoint: ["/bin/bash", "/usr/local/bin/entrypoint.sh"]
+      - uploads_data:/app/uploads
     networks:
       - itcaststore_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/", "||", "exit", "1"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/products", "||", "exit", "1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 90s
+      start_period: 60s
 
-  # Nginx 反向代理服务
-  nginx:
+  # 前端应用服务（Nginx）
+  frontend:
     build:
-      context: .
-      dockerfile: nginx/Dockerfile
-    container_name: itcaststore_nginx
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: itcaststore_frontend
     restart: unless-stopped
     depends_on:
       - backend
@@ -76,7 +64,7 @@ services:
     networks:
       - itcaststore_network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health", "||", "exit", "1"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/", "||", "exit", "1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -86,7 +74,7 @@ networks:
     driver: bridge
 
 volumes:
-  mysql_data:
+  postgres_data:
     driver: local
-  product_img_data:
+  uploads_data:
     driver: local
