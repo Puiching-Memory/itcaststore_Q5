@@ -33,7 +33,7 @@ export const useUserStore = defineStore('user', () => {
     token.value = response.data.data.token
     user.value = response.data.data.user
     if (token.value) {
-      localStorage.setItem('token', token.value)
+    localStorage.setItem('token', token.value)
     }
     isAuthenticated.value = true
     return response.data

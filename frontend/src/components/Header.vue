@@ -2,34 +2,51 @@
   <div class="header">
     <div class="header-content">
       <div class="logo" @click="$router.push('/')">
-        <h1>ItCast Store</h1>
+        <img src="/logo.png" alt="ItCast Store" class="logo-image" />
       </div>
-      <el-menu
-        mode="horizontal"
-        :default-active="activeIndex"
-        @select="handleSelect"
-        class="menu"
-      >
-        <el-menu-item index="home">首页</el-menu-item>
-        <el-menu-item index="products">图书</el-menu-item>
-        <el-menu-item index="cart" v-if="userStore.isAuthenticated">购物车</el-menu-item>
-        <el-menu-item index="orders" v-if="userStore.isAuthenticated">我的订单</el-menu-item>
-      </el-menu>
+      <nav class="menu">
+        <div 
+          v-for="item in menuItems" 
+          :key="item.index"
+          class="menu-item"
+          :class="{ active: activeIndex === item.index }"
+          @click="handleSelect(item.index)"
+        >
+          <Icon :icon="item.icon" class="menu-icon" />
+          <span>{{ item.label }}</span>
+        </div>
+      </nav>
       <div class="user-actions">
         <template v-if="userStore.isAuthenticated">
-          <el-dropdown>
-            <span class="user-name">{{ userStore.user?.username }}</span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item @click="$router.push('/profile')">个人中心</el-dropdown-item>
-                <el-dropdown-item @click="handleLogout">退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+          <div class="user-dropdown">
+            <div class="user-name" @click="showDropdown = !showDropdown">
+              <Icon icon="mdi:account-circle" class="user-icon" />
+              <span>{{ userStore.user?.username }}</span>
+              <Icon icon="mdi:chevron-down" class="chevron-icon" :class="{ open: showDropdown }" />
+            </div>
+            <transition name="dropdown">
+              <div v-if="showDropdown" class="dropdown-menu">
+                <div class="dropdown-item" @click="$router.push('/profile'); showDropdown = false">
+                  <Icon icon="mdi:account" class="dropdown-icon" />
+                  <span>个人中心</span>
+                </div>
+                <div class="dropdown-item" @click="handleLogout">
+                  <Icon icon="mdi:logout" class="dropdown-icon" />
+                  <span>退出登录</span>
+                </div>
+              </div>
+            </transition>
+          </div>
         </template>
         <template v-else>
-          <el-button @click="$router.push('/login')">登录</el-button>
-          <el-button type="primary" @click="$router.push('/register')">注册</el-button>
+          <button class="btn-secondary" @click="$router.push('/login')">
+            <Icon icon="mdi:login" class="btn-icon" />
+            登录
+          </button>
+          <button class="btn-primary" @click="$router.push('/register')">
+            <Icon icon="mdi:account-plus" class="btn-icon" />
+            注册
+          </button>
         </template>
       </div>
     </div>
@@ -37,13 +54,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { Icon } from '@iconify/vue'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const showDropdown = ref(false)
+
+const menuItems = [
+  { index: 'home', label: '首页', icon: 'mdi:home' },
+  { index: 'products', label: '图书', icon: 'mdi:book-open-variant' },
+  ...(userStore.isAuthenticated ? [
+    { index: 'cart', label: '购物车', icon: 'mdi:cart' },
+    { index: 'orders', label: '我的订单', icon: 'mdi:file-document-multiple' }
+  ] : [])
+]
 
 const activeIndex = computed(() => {
   const name = route.name as string
@@ -57,46 +85,303 @@ const handleSelect = (key: string) => {
 const handleLogout = () => {
   userStore.logout()
   router.push('/')
+  showDropdown.value = false
 }
+
+// 点击外部关闭下拉菜单
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.user-dropdown')) {
+    showDropdown.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style scoped>
 .header {
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset,
+              0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .header-content {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 32px;
+  height: 72px;
 }
 
 .logo {
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.logo h1 {
-  margin: 0;
-  color: #409eff;
+.logo:active {
+  transform: scale(0.98);
+}
+
+.logo-image {
+  height: 48px;
+  width: auto;
+  max-width: 180px;
+  object-fit: contain;
 }
 
 .menu {
   flex: 1;
-  border-bottom: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 48px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  font-size: 15px;
+  color: #636366;
+  position: relative;
+}
+
+.menu-item:hover {
+  background: rgba(0, 0, 0, 0.03);
+  color: #1C1C1E;
+}
+
+.menu-item.active {
+  color: #1C1C1E;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.menu-item:active {
+  transform: scale(0.96);
+}
+
+.menu-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
 }
 
 .user-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
 }
 
+.user-dropdown {
+  position: relative;
+}
+
 .user-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 24px;
   cursor: pointer;
-  color: #409eff;
+  background: rgba(0, 0, 0, 0.04);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  font-size: 15px;
+  color: #1C1C1E;
+}
+
+.user-name:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.user-name:active {
+  transform: scale(0.96);
+}
+
+.user-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.chevron-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chevron-icon.open {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 28px;
+  padding: 8px;
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.12),
+              0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  z-index: 1000;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  font-size: 15px;
+  color: #1C1C1E;
+}
+
+.dropdown-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.dropdown-item:active {
+  transform: scale(0.98);
+}
+
+.dropdown-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+/* 按钮样式 */
+.btn-primary,
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  outline: none;
+}
+
+.btn-primary {
+  background: #1C1C1E;
+  color: white;
+  box-shadow: 0 4px 12px rgba(28, 28, 30, 0.2);
+}
+
+.btn-primary:hover {
+  background: #2C2C2E;
+  box-shadow: 0 5px 14px rgba(28, 28, 30, 0.22);
+  transform: translateY(-0.5px);
+}
+
+.btn-primary:active {
+  transform: scale(0.96) translateY(0);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1C1C1E;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.btn-secondary:hover {
+  background: white;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  transform: translateY(-0.5px);
+}
+
+.btn-secondary:active {
+  transform: scale(0.96) translateY(0);
+}
+
+.btn-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+/* 下拉动画 */
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: top right;
+}
+
+.dropdown-enter-from {
+  opacity: 0;
+  transform: scale(0.95) translateY(-8px);
+}
+
+.dropdown-leave-to {
+  opacity: 0;
+  transform: scale(0.95) translateY(-8px);
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    padding: 0 20px;
+    height: 64px;
+  }
+  
+  .menu {
+    margin: 0 16px;
+    gap: 4px;
+  }
+  
+  .menu-item {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  
+  .menu-item span {
+    display: none;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  
+  .btn-primary span,
+  .btn-secondary span {
+    display: none;
+  }
 }
 </style>

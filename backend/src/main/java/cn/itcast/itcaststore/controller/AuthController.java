@@ -8,7 +8,6 @@ import cn.itcast.itcaststore.dto.RegisterRequest;
 import cn.itcast.itcaststore.dto.AuthResponse;
 import cn.itcast.itcaststore.util.ResponseResult;
 import jakarta.validation.Valid;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -18,12 +17,10 @@ import java.util.UUID;
 public class AuthController {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
 
-    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtTokenProvider tokenProvider) {
+    public AuthController(UserRepository userRepository, JwtTokenProvider tokenProvider) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
     }
 
@@ -35,7 +32,7 @@ public class AuthController {
         
         User user = new User();
         user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPassword(request.getPassword()); // 直接存储明文密码
         user.setEmail(request.getEmail());
         user.setGender(request.getGender());
         user.setTelephone(request.getTelephone());
@@ -54,7 +51,8 @@ public class AuthController {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("用户名或密码错误"));
         
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        // 直接比较明文密码
+        if (!request.getPassword().equals(user.getPassword())) {
             throw new RuntimeException("用户名或密码错误");
         }
         

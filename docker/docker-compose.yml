@@ -69,6 +69,20 @@ services:
       timeout: 10s
       retries: 3
 
+  # Langflow 智能体服务
+  langflow:
+    image: langflowai/langflow:latest
+    container_name: itcaststore_langflow
+    restart: unless-stopped
+    ports:
+      - "7860:7860"          # 宿主机访问 Langflow：http://localhost:7860
+    volumes:
+      - langflow_data:/data  # 持久化 Langflow 配置和数据
+    environment:
+      - LANGFLOW_PORT=7860
+    networks:
+      - itcaststore_network
+
 networks:
   itcaststore_network:
     driver: bridge
@@ -77,4 +91,6 @@ volumes:
   postgres_data:
     driver: local
   uploads_data:
+    driver: local
+  langflow_data:
     driver: local

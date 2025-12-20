@@ -2,6 +2,7 @@ package cn.itcast.itcaststore.controller;
 
 import cn.itcast.itcaststore.util.ResponseResult;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -30,5 +31,11 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
         return ResponseResult.error(400, "数据验证失败");
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseResult<Object> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        return ResponseResult.error(400, "请求体格式错误");
     }
 }

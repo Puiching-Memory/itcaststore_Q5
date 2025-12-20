@@ -3,7 +3,10 @@
     <Header />
     <el-container>
       <el-main>
-        <h2>我的订单</h2>
+        <h2>
+          <Icon icon="mdi:file-document-multiple" class="page-icon" />
+          我的订单
+        </h2>
         <el-table :data="orders" v-loading="loading">
           <el-table-column prop="id" label="订单号" />
           <el-table-column prop="money" label="金额" />
@@ -25,6 +28,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { Icon } from '@iconify/vue'
 import Header from '@/components/Header.vue'
 import api from '@/utils/api'
 
@@ -51,5 +55,11 @@ onMounted(() => {
 <style scoped>
 .orders-page {
   min-height: 100vh;
+}
+
+.page-icon {
+  font-size: 24px;
+  margin-right: 8px;
+  vertical-align: middle;
 }
 </style>
