@@ -232,7 +232,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
@@ -280,21 +280,21 @@ const goToProduct = (productId: string) => {
   router.push(`/product/${productId}`)
 }
 
-const increaseQuantity = (productId: string) => {
+const increaseQuantity = async (productId: string) => {
   const item = cartStore.items.find(item => item.id === productId)
   if (item) {
-    cartStore.updateQuantity(productId, item.quantity + 1)
+    await cartStore.updateQuantity(productId, item.quantity + 1)
   }
 }
 
-const decreaseQuantity = (productId: string) => {
+const decreaseQuantity = async (productId: string) => {
   const item = cartStore.items.find(item => item.id === productId)
   if (item && item.quantity > 1) {
-    cartStore.updateQuantity(productId, item.quantity - 1)
+    await cartStore.updateQuantity(productId, item.quantity - 1)
   }
 }
 
-const handleRemoveItem = (productId: string) => {
+const handleRemoveItem = async (productId: string) => {
   const item = cartStore.items.find(item => item.id === productId)
   if (item) {
     ElMessageBox.confirm(
@@ -305,15 +305,15 @@ const handleRemoveItem = (productId: string) => {
         cancelButtonText: '取消',
         type: 'warning'
       }
-    ).then(() => {
-      cartStore.removeItem(productId)
+    ).then(async () => {
+      await cartStore.removeItem(productId)
     }).catch(() => {
       // 用户取消
     })
   }
 }
 
-const handleClearCart = () => {
+const handleClearCart = async () => {
   ElMessageBox.confirm(
     '确定要清空购物车吗？',
     '确认清空',
@@ -322,14 +322,16 @@ const handleClearCart = () => {
       cancelButtonText: '取消',
       type: 'warning'
     }
-  ).then(() => {
-    cartStore.clearCart()
+  ).then(async () => {
+    await cartStore.clearCart()
   }).catch(() => {
     // 用户取消
   })
 }
 
-const handleCheckout = () => {
+const handleCheckout = async () => {
+  await cartStore.fetchCart()
+
   if (cartStore.items.length === 0) {
     ElMessage.warning('购物车是空的')
     return
@@ -381,7 +383,7 @@ const handleSubmitOrder = async () => {
       ElMessage.success('订单创建成功！')
       
       // 清空购物车
-      cartStore.clearCart()
+      await cartStore.clearCart()
       
       // 关闭对话框
       checkoutDialogVisible.value = false
@@ -405,6 +407,12 @@ const handleSubmitOrder = async () => {
     submitting.value = false
   }
 }
+
+onMounted(() => {
+  if (userStore.isAuthenticated) {
+    cartStore.fetchCart()
+  }
+})
 </script>
 
 <style scoped>

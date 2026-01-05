@@ -217,8 +217,8 @@ const goToProduct = (id: number) => {
   router.push(`/product/${id}`)
 }
 
-const addToCart = (product: Product) => {
-  cartStore.addItem({
+const addToCart = async (product: Product) => {
+  await cartStore.addItem({
     id: product.id.toString(),
     name: product.name,
     price: product.price,

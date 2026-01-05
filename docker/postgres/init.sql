@@ -50,6 +50,19 @@ CREATE TABLE IF NOT EXISTS orderitem (
     CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
+-- 创建购物车表
+CREATE TABLE IF NOT EXISTS cart_items (
+    id SERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    product_id VARCHAR(100) NOT NULL,
+    quantity INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_cart_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_cart_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    CONSTRAINT uk_cart_user_product UNIQUE (user_id, product_id)
+);
+
 -- 创建公告表
 CREATE TABLE IF NOT EXISTS notice (
     n_id SERIAL PRIMARY KEY,

@@ -82,9 +82,9 @@ const loadProduct = async () => {
   }
 }
 
-const addToCart = () => {
+const addToCart = async () => {
   if (product.value) {
-    cartStore.addItem({
+    await cartStore.addItem({
       id: product.value.id.toString(),
       name: product.value.name,
       price: product.value.price,
