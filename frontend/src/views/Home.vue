@@ -160,69 +160,6 @@
         </div>
       </el-main>
     </el-container>
-
-    <!-- 右下角智能推荐气泡 -->
-    <div class="agent-bubble-container">
-      <transition name="fade">
-        <div v-if="agentBubbleOpen" class="agent-bubble-card">
-          <div class="agent-bubble-header">
-            <div class="agent-header-left">
-              <Icon icon="mdi:robot" class="agent-icon" />
-              <h3>智能图书推荐</h3>
-            </div>
-            <el-button
-              text
-              @click="agentBubbleOpen = false"
-              class="close-btn"
-            >
-              <Icon icon="mdi:close" />
-            </el-button>
-          </div>
-          <div class="agent-bubble-body">
-            <div class="agent-messages">
-              <div v-if="agentAnswer" class="agent-message agent-answer">
-                <div class="message-avatar">
-                  <Icon icon="mdi:robot" />
-                </div>
-                <div class="message-content">
-                  <p style="white-space: pre-wrap">{{ agentAnswer }}</p>
-                </div>
-              </div>
-            </div>
-            <div class="agent-input-area">
-              <el-input
-                v-model="agentQuestion"
-                type="textarea"
-                :rows="3"
-                placeholder="请输入你的需求，例如：我想找一本适合初学者的Java Web开发书"
-                @keyup.ctrl.enter="handleAgentRecommend"
-              />
-              <el-button
-                type="primary"
-                :loading="agentLoading"
-                @click="handleAgentRecommend"
-                class="send-btn"
-              >
-                <Icon icon="mdi:send" style="margin-right: 6px" />
-                获取推荐
-              </el-button>
-            </div>
-          </div>
-        </div>
-      </transition>
-
-      <div
-        class="agent-bubble-button"
-        @click="toggleAgentBubble"
-        :class="{ active: agentBubbleOpen }"
-      >
-        <Icon 
-          :icon="agentBubbleOpen ? 'mdi:close' : 'mdi:robot'" 
-          :width="24" 
-          :height="24"
-        />
-      </div>
-    </div>
   </div>
 </template>
 
@@ -265,10 +202,6 @@ const banners = ref<Banner[]>([
   { id: 2, title: '促销活动', image: '/banners/banner2.png' },
   { id: 3, title: '品牌宣传', image: '/banners/banner3.png' }
 ])
-const agentQuestion = ref('')
-const agentAnswer = ref('')
-const agentLoading = ref(false)
-const agentBubbleOpen = ref(false)
 const currentBannerIndex = ref(0)
 const carouselRef = ref<ComponentPublicInstance | null>(null)
 
@@ -303,33 +236,6 @@ const goToBanner = (index: number) => {
   if (carouselRef.value) {
     ;(carouselRef.value as any).setActiveItem(index)
     currentBannerIndex.value = index
-  }
-}
-
-const toggleAgentBubble = () => {
-  agentBubbleOpen.value = !agentBubbleOpen.value
-  if (!agentBubbleOpen.value) {
-    agentQuestion.value = ''
-    agentAnswer.value = ''
-  }
-}
-
-const handleAgentRecommend = async () => {
-  if (!agentQuestion.value.trim()) {
-    return
-  }
-  agentLoading.value = true
-  agentAnswer.value = ''
-  try {
-    const res = await api.post('/agent/recommend', {
-      question: agentQuestion.value
-    })
-    agentAnswer.value = res.data.data || '暂时没有合适的推荐结果，请稍后再试。'
-  } catch (error) {
-    console.error('获取智能推荐失败:', error)
-    agentAnswer.value = '获取推荐失败，请检查网络或稍后再试。'
-  } finally {
-    agentLoading.value = false
   }
 }
 
@@ -1293,216 +1199,6 @@ onMounted(async () => {
   transform: translateX(2px);
 }
 
-/* 智能推荐气泡 */
-.agent-bubble-container {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 1000;
-}
-
-.agent-bubble-button {
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius-full);
-  background: var(--graphite);
-  box-shadow: 0 8px 24px rgba(28, 28, 30, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: var(--transition-base);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.agent-bubble-button:hover {
-  transform: scale(1.04);
-  box-shadow: 0 10px 28px rgba(28, 28, 30, 0.3);
-}
-
-.agent-bubble-button:active {
-  transform: scale(0.95);
-}
-
-.agent-bubble-button.active {
-  background: var(--ios-gray-700);
-}
-
-.agent-bubble-card {
-  position: absolute;
-  bottom: 80px;
-  right: 0;
-  width: 420px;
-  max-height: 680px;
-  background: var(--frosted-bg-light);
-  backdrop-filter: blur(var(--blur-lg));
-  -webkit-backdrop-filter: blur(var(--blur-lg));
-  border: 1px solid var(--frosted-border);
-  border-radius: var(--radius-3xl);
-  box-shadow: var(--shadow-2xl),
-              var(--shadow-inset);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.agent-bubble-header {
-  padding: 24px;
-  background: var(--graphite);
-  color: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: var(--shadow-sm);
-}
-
-.agent-header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.agent-icon {
-  font-size: 24px;
-}
-
-.agent-bubble-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.close-btn {
-  color: white;
-  padding: 0;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.agent-bubble-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  max-height: 570px;
-}
-
-.agent-messages {
-  flex: 1;
-  padding: 24px;
-  overflow-y: auto;
-  min-height: 120px;
-  max-height: 350px;
-  background: var(--ios-gray-100);
-}
-
-.agent-message {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.message-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-full);
-  background: var(--graphite);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(28, 28, 30, 0.2);
-}
-
-.message-content {
-  flex: 1;
-  background: var(--frosted-bg-heavy);
-  backdrop-filter: blur(var(--blur-md));
-  -webkit-backdrop-filter: blur(var(--blur-md));
-  border: 1px solid var(--frosted-border);
-  border-radius: var(--radius-md);
-  padding: 16px 20px;
-  box-shadow: var(--shadow-sm),
-              var(--shadow-inset);
-}
-
-.message-content p {
-  margin: 0;
-  line-height: 1.6;
-  color: #303133;
-}
-
-.agent-input-area {
-  padding: 24px;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-}
-
-.agent-input-area :deep(.el-textarea__inner) {
-  border-radius: var(--radius-md);
-  resize: none;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  background: var(--frosted-bg-heavy);
-  backdrop-filter: blur(var(--blur-sm));
-  -webkit-backdrop-filter: blur(var(--blur-sm));
-  padding: 16px;
-  font-size: 15px;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.agent-input-area :deep(.el-textarea__inner):focus {
-  border-color: var(--graphite);
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.send-btn {
-  width: 100%;
-  margin-top: 16px;
-  height: 48px;
-  border-radius: var(--radius-lg);
-  background: var(--graphite);
-  color: white;
-  font-weight: 600;
-  font-size: 15px;
-  border: none;
-  cursor: pointer;
-  transition: var(--transition-fast);
-  box-shadow: 0 4px 12px rgba(28, 28, 30, 0.2);
-}
-
-.send-btn:hover {
-  background: var(--graphite-light);
-  box-shadow: 0 5px 14px rgba(28, 28, 30, 0.22);
-  transform: translateY(-0.5px);
-}
-
-.send-btn:active {
-  transform: scale(0.98);
-}
-
-/* 动画 */
-.fade-enter-active,
-.fade-leave-active {
-  transition: var(--transition-base);
-  transform-origin: bottom right;
-}
-
-.fade-enter-from {
-  opacity: 0;
-  transform: scale(0.8) translateY(20px);
-}
-
-.fade-leave-to {
-  opacity: 0;
-  transform: scale(0.8) translateY(20px);
-}
-
 /* 响应式设计 */
 @media (max-width: 768px) {
   .banner-section {
@@ -1594,11 +1290,6 @@ onMounted(async () => {
 
   .notices-sidebar-content {
     max-height: 400px;
-  }
-
-  .agent-bubble-card {
-    width: calc(100vw - 40px);
-    right: -10px;
   }
 
   .hot-products-grid {

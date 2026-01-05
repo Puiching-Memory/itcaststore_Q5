@@ -1,6 +1,19 @@
 <template>
   <div :class="{ 'auth-page': isAuthPage }">
     <router-view />
+    
+    <!-- LangFlow 智能助手 -->
+    <div v-if="!isAuthPage" class="langflow-agent-container">
+      <langflow-chat
+        window_title="ItCast Store 智能助手"
+        flow_id="3adfce3e-5823-4029-bd20-6a974e71dfcf"
+        host_url="http://localhost:7860"
+        api_key="sk-Ny-i7FWOaaRcsbEie2agEV64URMeos-EV3CsW5tjg2s"
+        chat_position="top-left"
+        placeholder="有什么我可以帮您的吗？"
+      >
+      </langflow-chat>
+    </div>
   </div>
 </template>
 
@@ -158,5 +171,13 @@ body {
 .dropdown-menu,
 .el-dropdown-menu__item {
   background-color: #ffffff !important;
+}
+
+/* LangFlow 智能助手容器 - 固定在右下方 */
+.langflow-agent-container {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 9999;
 }
 </style>

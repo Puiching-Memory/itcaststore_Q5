@@ -7,7 +7,15 @@ import { fileURLToPath, URL } from 'node:url'
 const isDocker = process.env.DOCKER_ENV === 'true'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue({
+      template: {
+        compilerOptions: {
+          isCustomElement: (tag) => tag.startsWith('langflow-')
+        }
+      }
+    })
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
