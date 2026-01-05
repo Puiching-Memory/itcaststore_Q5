@@ -84,6 +84,22 @@ public class OrderController {
         return ResponseResult.success(savedOrder);
     }
 
+    @PostMapping("/{id}/pay")
+    public ResponseResult<Void> payOrder(@PathVariable String id, HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("未授权");
+        }
+        String token = authHeader.substring(7);
+        Long userId = tokenProvider.getUserIdFromToken(token);
+        if (userId == null) {
+            throw new RuntimeException("无效的Token");
+        }
+        
+        orderService.payOrder(id, userId);
+        return ResponseResult.success(null);
+    }
+
     /**
      * 管理员查看所有订单
      */

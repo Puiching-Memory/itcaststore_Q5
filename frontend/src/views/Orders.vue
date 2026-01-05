@@ -49,6 +49,26 @@
               <span class="order-time">{{ formatTime(row.ordertime) }}</span>
             </template>
           </el-table-column>
+          <el-table-column label="操作" min-width="150" fixed="right">
+            <template #default="{ row }">
+              <el-button
+                v-if="row.paystate === 0"
+                type="primary"
+                size="small"
+                @click="handlePay(row.id)"
+              >
+                支付
+              </el-button>
+              <el-button
+                v-if="row.paystate === 0"
+                type="danger"
+                size="small"
+                @click="handleDelete(row.id)"
+              >
+                删除
+              </el-button>
+            </template>
+          </el-table-column>
         </el-table>
 
         <!-- 空状态 -->
@@ -66,6 +86,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import Header from '@/components/Header.vue'
 import { useUserStore } from '@/stores/user'
 import api from '@/utils/api'
@@ -117,6 +138,40 @@ const formatTime = (time: string) => {
 
 const goToOrderManage = () => {
   router.push('/orders/manage')
+}
+
+const handlePay = (orderId: string) => {
+  router.push({
+    path: '/payment',
+    query: { orderId }
+  })
+}
+
+const handleDelete = async (orderId: string) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要删除这个未支付的订单吗？',
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+    
+    const response = await api.delete(`/orders/${orderId}`)
+    if (response.data.code === 200) {
+      ElMessage.success('订单已删除')
+      loadOrders()
+    } else {
+      ElMessage.error(response.data.message || '删除失败')
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('删除订单失败:', error)
+      ElMessage.error(error.response?.data?.message || '删除失败')
+    }
+  }
 }
 
 onMounted(async () => {

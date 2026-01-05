@@ -388,8 +388,12 @@ const handleSubmitOrder = async () => {
       // 关闭对话框
       checkoutDialogVisible.value = false
       
-      // 跳转到订单页面
-      router.push('/orders')
+      // 跳转到支付页面
+      const orderId = response.data.data.id
+      router.push({
+        path: '/payment',
+        query: { orderId }
+      })
     } else {
       ElMessage.error(response.data.message || '订单创建失败')
     }

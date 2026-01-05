@@ -137,4 +137,28 @@ public class OrderService {
 
         orderRepository.delete(order);
     }
+
+    /**
+     * 支付订单：将订单状态更新为已支付
+     */
+    @Transactional
+    public void payOrder(String orderId, Long userId) {
+        if (orderId == null || orderId.isBlank()) {
+            throw new RuntimeException("订单ID不能为空");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("订单不存在"));
+
+        if (!order.getUserId().equals(userId)) {
+            throw new RuntimeException("无权支付此订单");
+        }
+
+        if (order.getPaystate() == 1) {
+            throw new RuntimeException("订单已支付");
+        }
+
+        order.setPaystate(1);
+        orderRepository.save(order);
+    }
 }
