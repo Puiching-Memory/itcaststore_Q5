@@ -115,4 +115,56 @@ public class OrderController {
         Page<Order> orders = orderRepository.findAll(pageable);
         return ResponseResult.success(orders);
     }
+
+    /**
+     * 用户删除自己的订单（只能删除未支付的订单）
+     */
+    @DeleteMapping("/{id}")
+    public ResponseResult<Void> deleteOrder(
+            @PathVariable String id,
+            HttpServletRequest request) {
+
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("未授权");
+        }
+        String token = authHeader.substring(7);
+        Long userId = tokenProvider.getUserIdFromToken(token);
+        if (userId == null) {
+            throw new RuntimeException("无效的Token");
+        }
+
+        orderService.deleteOrder(id, userId, false);
+        return ResponseResult.success(null);
+    }
+
+    /**
+     * 管理员删除任意订单
+     */
+    @DeleteMapping("/admin/{id}")
+    public ResponseResult<Void> adminDeleteOrder(
+            @PathVariable String id,
+            HttpServletRequest request) {
+
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("未授权");
+        }
+        String token = authHeader.substring(7);
+        Long userId = tokenProvider.getUserIdFromToken(token);
+        if (userId == null) {
+            throw new RuntimeException("无效的Token");
+        }
+
+        // 校验是否为管理员
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+        if (!"超级用户".equals(user.getRole()) && !"管理员".equals(user.getRole())) {
+            throw new RuntimeException("权限不足，仅管理员可访问");
+        }
+
+        orderService.deleteOrder(id, userId, true);
+        return ResponseResult.success(null);
+    }
 }

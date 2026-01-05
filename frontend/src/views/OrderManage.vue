@@ -69,10 +69,18 @@
               <span class="order-time">{{ formatTime(row.ordertime) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" min-width="100" align="center" fixed="right">
+          <el-table-column label="操作" min-width="150" align="center" fixed="right">
             <template #default="{ row }">
               <el-button type="primary" link size="small" @click="viewDetail(row)">
                 查看详情
+              </el-button>
+              <el-button 
+                type="danger" 
+                link 
+                size="small" 
+                @click="handleDelete(row)"
+              >
+                删除
               </el-button>
             </template>
           </el-table-column>
@@ -153,6 +161,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Icon } from '@iconify/vue'
 import Header from '@/components/Header.vue'
 import { useUserStore } from '@/stores/user'
@@ -250,6 +259,33 @@ const loadOrders = async () => {
 const viewDetail = (order: Order) => {
   selectedOrder.value = order
   detailDialogVisible.value = true
+}
+
+const handleDelete = async (order: Order) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除订单 "${order.id}" 吗？删除后无法恢复。`,
+      '删除确认',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+    
+    loading.value = true
+    await api.delete(`/orders/admin/${order.id}`)
+    ElMessage.success('订单删除成功')
+    // 重新加载订单列表
+    loadOrders()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('删除订单失败:', error)
+      ElMessage.error(error.response?.data?.message || '删除订单失败')
+    }
+  } finally {
+    loading.value = false
+  }
 }
 
 const formatTime = (time: string) => {

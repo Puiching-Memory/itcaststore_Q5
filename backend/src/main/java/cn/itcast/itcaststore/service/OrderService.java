@@ -111,4 +111,30 @@ public class OrderService {
 
         return savedOrder;
     }
+
+    /**
+     * 删除订单：校验权限并删除订单及其关联的订单项
+     * 由于Order实体配置了cascade = CascadeType.ALL，删除Order时会自动删除关联的OrderItem
+     */
+    @Transactional
+    public void deleteOrder(String orderId, Long userId, boolean isAdmin) {
+        if (orderId == null || orderId.isBlank()) {
+            throw new RuntimeException("订单ID不能为空");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("订单不存在"));
+
+        // 非管理员只能删除自己的订单
+        if (!isAdmin && !order.getUserId().equals(userId)) {
+            throw new RuntimeException("无权删除此订单");
+        }
+
+        // 管理员可以删除任何订单，普通用户只能删除未支付的订单
+        if (!isAdmin && order.getPaystate() == 1) {
+            throw new RuntimeException("已支付的订单无法删除");
+        }
+
+        orderRepository.delete(order);
+    }
 }
