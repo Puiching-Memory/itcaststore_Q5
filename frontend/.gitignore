@@ -12,6 +12,9 @@ node_modules
 # Build outputs
 dist
 dist-ssr
+.env
+.env.*
+!.env.example
 *.local
 
 # Editor directories and files

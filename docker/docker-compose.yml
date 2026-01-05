@@ -85,12 +85,15 @@ services:
     image: langflowai/langflow:latest
     container_name: itcaststore_langflow
     restart: unless-stopped
+    user: "0:0"  # 以 root 运行以避免卷权限问题
     ports:
       - "7860:7860"          # 宿主机访问 Langflow：http://localhost:7860
     volumes:
-      - langflow_data:/data  # 持久化 Langflow 配置和数据
+      - langflow_data:/app/.langflow  # 持久化 Langflow 配置和数据
     environment:
       - LANGFLOW_PORT=7860
+      - LANGFLOW_CONFIG_DIR=/app/.langflow  # 指定配置目录，与卷挂载路径一致
+      - LANGFLOW_DATABASE_URL=sqlite:////app/.langflow/langflow.db  # 将数据库放在持久化卷内
     networks:
       - itcaststore_network
 
